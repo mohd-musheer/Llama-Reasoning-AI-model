@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reasoning AI</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-dot"></span>
+          <div class="brand-text">
+            <div class="brand-title">Reasoning AI</div>
+            <div class="brand-subtitle">llama.cpp powered reasoning</div>
+          </div>
+        </div>
+        <button class="ghost" id="clearBtn" type="button">Clear</button>
+      </header>
+
+      <main class="chat">
+        <div id="chatList" class="chat-list"></div>
+      </main>
+
+      <footer class="composer">
+        <form id="chatForm" class="composer-inner" autocomplete="off">
+          <textarea
+            id="promptInput"
+            rows="1"
+            placeholder="Message Reasoning AI..."
+            aria-label="Message input"
+          ></textarea>
+          <button id="sendBtn" type="submit" class="send">
+            <span class="send-text">Send</span>
+            <span class="send-icon">&rarr;</span>
+          </button>
+        </form>
+        <div class="composer-hint">Enter to send, Shift+Enter for a new line</div>
+      </footer>
+    </div>
+
+    <noscript>
+      This app requires JavaScript to run.
+    </noscript>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
