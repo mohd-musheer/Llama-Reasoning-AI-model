@@ -6,8 +6,31 @@ const clearBtn = document.getElementById("clearBtn");
 
 let isGenerating = false;
 
+const prefersReducedMotion = window.matchMedia(
+  "(prefers-reduced-motion: reduce)"
+).matches;
+
 const welcomeText =
   "Hello. Ask me anything and I will reason it out step by step.";
+
+if (window.marked) {
+  window.marked.setOptions({
+    gfm: true,
+    breaks: true,
+    headerIds: false,
+    mangle: false,
+  });
+}
+
+const mathOptions = {
+  delimiters: [
+    { left: "$$", right: "$$", display: true },
+    { left: "$", right: "$", display: false },
+    { left: "\\(", right: "\\)", display: false },
+    { left: "\\[", right: "\\]", display: true },
+  ],
+  throwOnError: false,
+};
 
 function escapeHtml(value) {
   return value
@@ -18,38 +41,48 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-function formatMarkdownLike(text) {
+function renderMarkdown(text) {
   if (!text) {
     return "";
   }
 
-  const escaped = escapeHtml(text);
-  const segments = escaped.split(/```/);
-  let html = "";
+  if (!window.marked || !window.DOMPurify) {
+    return escapeHtml(text).replace(/\n/g, "<br>");
+  }
 
-  segments.forEach((segment, index) => {
-    if (index % 2 === 1) {
-      const cleaned = segment.replace(/^\n/, "").replace(/\n$/, "");
-      html += `<pre><code>${cleaned}</code></pre>`;
-      return;
-    }
-
-    let part = segment
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.+?)\*/g, "<em>$1</em>")
-      .replace(/`([^`]+)`/g, "<code>$1</code>")
-      .replace(/\n/g, "<br>");
-
-    html += part;
-  });
-
-  return html;
+  const raw = window.marked.parse(text);
+  return window.DOMPurify.sanitize(raw, { USE_PROFILES: { html: true } });
 }
 
-function autoScroll(smooth) {
-  chatList.scrollTo({
-    top: chatList.scrollHeight,
-    behavior: smooth ? "smooth" : "auto",
+function renderMath(container) {
+  if (window.renderMathInElement) {
+    window.renderMathInElement(container, mathOptions);
+  }
+}
+
+function isNearBottom() {
+  const threshold = 140;
+  return (
+    chatList.scrollHeight - chatList.scrollTop - chatList.clientHeight <
+    threshold
+  );
+}
+
+let scrollFrame = null;
+function autoScroll({ smooth = false, force = false } = {}) {
+  if (!force && !isNearBottom()) {
+    return;
+  }
+
+  if (scrollFrame) {
+    window.cancelAnimationFrame(scrollFrame);
+  }
+
+  scrollFrame = window.requestAnimationFrame(() => {
+    chatList.scrollTo({
+      top: chatList.scrollHeight,
+      behavior: smooth ? "smooth" : "auto",
+    });
   });
 }
 
@@ -60,36 +93,68 @@ function createMessage(role) {
   const bubble = document.createElement("div");
   bubble.className = "bubble";
 
+  const content = document.createElement("div");
+  content.className = "bubble-content";
+
+  bubble.appendChild(content);
   message.appendChild(bubble);
   chatList.appendChild(message);
-  autoScroll(true);
+  autoScroll({ smooth: true, force: true });
 
-  return { message, bubble };
+  return { message, bubble, content };
 }
 
 function addUserMessage(text) {
-  const { bubble } = createMessage("user");
-  bubble.innerHTML = formatMarkdownLike(text);
+  const { content } = createMessage("user");
+  content.innerHTML = renderMarkdown(text);
+  renderMath(content);
 }
 
 function addAssistantMessage(text) {
-  const { bubble } = createMessage("assistant");
-  bubble.innerHTML = formatMarkdownLike(text);
+  const { content } = createMessage("assistant");
+  content.innerHTML = renderMarkdown(text);
+  renderMath(content);
 }
 
-function addTypingIndicator() {
-  const { bubble } = createMessage("assistant");
-  bubble.classList.add("typing");
-  bubble.innerHTML =
-    '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
-  return bubble;
+function addThinkingIndicator() {
+  const { bubble, content } = createMessage("assistant");
+  bubble.classList.add("thinking");
+
+  const label = document.createElement("span");
+  label.className = "thinking-text";
+  label.textContent = "Thinking...";
+  content.appendChild(label);
+
+  let timer = null;
+  if (!prefersReducedMotion) {
+    const frames = ["Thinking.", "Thinking..", "Thinking..."];
+    let index = 0;
+    timer = window.setInterval(() => {
+      label.textContent = frames[index % frames.length];
+      index += 1;
+    }, 520);
+  }
+
+  return {
+    bubble,
+    content,
+    stop: () => {
+      if (timer) {
+        window.clearInterval(timer);
+      }
+    },
+  };
 }
 
 function setLoadingState(loading) {
   isGenerating = loading;
   sendBtn.disabled = loading;
-  promptInput.disabled = loading;
-  chatForm.classList.toggle("loading", loading);
+
+  if (loading) {
+    chatForm.dataset.generating = "true";
+  } else {
+    delete chatForm.dataset.generating;
+  }
 }
 
 function resizeInput() {
@@ -97,26 +162,38 @@ function resizeInput() {
   promptInput.style.height = `${Math.min(promptInput.scrollHeight, 160)}px`;
 }
 
-function typeText(bubble, text) {
+function typewriter(content, fullText) {
+  if (prefersReducedMotion) {
+    content.innerHTML = renderMarkdown(fullText);
+    return Promise.resolve();
+  }
+
   return new Promise((resolve) => {
-    const stream = document.createElement("span");
-    stream.className = "stream";
-    bubble.appendChild(stream);
+    const total = fullText.length;
+    if (total === 0) {
+      content.innerHTML = "";
+      resolve();
+      return;
+    }
 
-    const tokens = text.split(/(\s+)/);
+    const targetFrames = 180;
+    const chunkSize = Math.max(2, Math.ceil(total / targetFrames));
     let index = 0;
-    const step = Math.max(1, Math.floor(tokens.length / 3000));
 
-    const timer = setInterval(() => {
-      stream.textContent += tokens.slice(index, index + step).join("");
-      index += step;
-      autoScroll(true);
+    const step = () => {
+      index = Math.min(total, index + chunkSize);
+      content.innerHTML = renderMarkdown(fullText.slice(0, index));
+      autoScroll({ force: true });
 
-      if (index >= tokens.length) {
-        clearInterval(timer);
+      if (index >= total) {
         resolve();
+        return;
       }
-    }, 14);
+
+      window.setTimeout(step, 18);
+    };
+
+    step();
   });
 }
 
@@ -136,7 +213,7 @@ async function handleSubmit(event) {
   resizeInput();
   setLoadingState(true);
 
-  const typingBubble = addTypingIndicator();
+  const thinking = addThinkingIndicator();
 
   try {
     const response = await fetch("/generate", {
@@ -154,36 +231,43 @@ async function handleSubmit(event) {
     const data = await response.json();
     const output = data.response || "";
 
-    typingBubble.classList.remove("typing");
-    typingBubble.innerHTML = "";
+    thinking.stop();
+    thinking.bubble.classList.remove("thinking");
+    thinking.content.innerHTML = "";
 
-    await typeText(typingBubble, output);
-    typingBubble.innerHTML = formatMarkdownLike(output) || "";
+    await typewriter(thinking.content, output);
+    thinking.content.innerHTML = renderMarkdown(output);
+    renderMath(thinking.content);
   } catch (error) {
-    typingBubble.classList.remove("typing");
-    typingBubble.innerHTML =
-      "Sorry, I could not reach the model server. Please try again.";
+    thinking.stop();
+    thinking.bubble.classList.remove("thinking");
+    thinking.content.innerHTML = renderMarkdown(
+      "Sorry, I could not reach the model server. Please try again."
+    );
   } finally {
     setLoadingState(false);
-    promptInput.focus();
   }
 }
 
 function handleKeyDown(event) {
   if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault();
-    chatForm.requestSubmit();
+    if (!isGenerating) {
+      chatForm.requestSubmit();
+    }
   }
 }
 
 function resetChat() {
   chatList.innerHTML = "";
   addAssistantMessage(welcomeText);
+  autoScroll({ smooth: false, force: true });
 }
 
 promptInput.addEventListener("input", resizeInput);
 promptInput.addEventListener("keydown", handleKeyDown);
 chatForm.addEventListener("submit", handleSubmit);
 clearBtn.addEventListener("click", resetChat);
+window.addEventListener("resize", resizeInput);
 
 resetChat();
