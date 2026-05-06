@@ -4,6 +4,7 @@ A reasoning-focused local LLM chat application powered by Quantized Llama 3, lla
 
 It runs fully locally using GGUF models and provides a modern ChatGPT-style interface with markdown and LaTeX rendering support.
 
+
 ---
 
 ## 🚀 Demo Features
