@@ -1,4 +1,4 @@
 .venv/
 .vscode/
-model/llama3-q4_k_m.gguf
 app/__pycache__/
+llama.cpp/

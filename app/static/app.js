@@ -197,6 +197,92 @@ function typewriter(content, fullText) {
   });
 }
 
+// Attempts SSE / text-stream from /generate. Returns true if the server
+// sent at least one data chunk, false if the endpoint is non-streaming.
+async function streamCompletion(prompt, onDelta) {
+  const response = await fetch("/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Request failed (${response.status})`);
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+
+  // Non-streaming JSON response — let the caller fall back to requestCompletion
+  if (contentType.includes("application/json")) {
+    const data = await response.json();
+    const text = data.response || "";
+    if (text) {
+      onDelta(text);
+    }
+    return true;
+  }
+
+  // Streaming: read the body as an SSE / newline-delimited text stream
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let receivedAny = false;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop(); // keep incomplete last line
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed === "data: [DONE]") continue;
+
+      const raw = trimmed.startsWith("data: ")
+        ? trimmed.slice(6)
+        : trimmed;
+
+      try {
+        const parsed = JSON.parse(raw);
+        // OpenAI-style SSE delta
+        const delta =
+          parsed?.choices?.[0]?.delta?.content ??
+          parsed?.response ??
+          "";
+        if (delta) {
+          onDelta(delta);
+          receivedAny = true;
+        }
+      } catch {
+        // Not JSON — treat the raw text as a plain delta
+        if (raw) {
+          onDelta(raw);
+          receivedAny = true;
+        }
+      }
+    }
+  }
+
+  return receivedAny;
+}
+
+async function requestCompletion(prompt) {
+  const response = await fetch("/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Request failed (${response.status})`);
+  }
+
+  const data = await response.json();
+  return data.response || "";
+}
+
 async function handleSubmit(event) {
   event.preventDefault();
   if (isGenerating) {
@@ -214,29 +300,44 @@ async function handleSubmit(event) {
   setLoadingState(true);
 
   const thinking = addThinkingIndicator();
+  let responseText = "";
+  let started = false;
 
-  try {
-    const response = await fetch("/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ prompt }),
-    });
+  const applyDelta = (delta) => {
+    if (!delta) return;
 
-    if (!response.ok) {
-      throw new Error(`Request failed (${response.status})`);
+    if (!started) {
+      thinking.stop();
+      thinking.bubble.classList.remove("thinking");
+      thinking.content.innerHTML = "";
+      started = true;
     }
 
-    const data = await response.json();
-    const output = data.response || "";
+    responseText += delta;
+    thinking.content.innerHTML = renderMarkdown(responseText);
+    autoScroll({ force: true });
+  };
 
-    thinking.stop();
-    thinking.bubble.classList.remove("thinking");
-    thinking.content.innerHTML = "";
+  try {
+    const streamed = await streamCompletion(prompt, applyDelta);
 
-    await typewriter(thinking.content, output);
-    thinking.content.innerHTML = renderMarkdown(output);
+    if (!streamed) {
+      // streamCompletion returned false — pure fallback (shouldn't normally happen)
+      const output = await requestCompletion(prompt);
+      responseText = output;
+      if (!started) {
+        thinking.stop();
+        thinking.bubble.classList.remove("thinking");
+        thinking.content.innerHTML = "";
+      }
+      await typewriter(thinking.content, output);
+      thinking.content.innerHTML = renderMarkdown(output);
+    } else if (!started) {
+      thinking.stop();
+      thinking.bubble.classList.remove("thinking");
+      thinking.content.innerHTML = renderMarkdown("");
+    }
+
     renderMath(thinking.content);
   } catch (error) {
     thinking.stop();
@@ -244,6 +345,7 @@ async function handleSubmit(event) {
     thinking.content.innerHTML = renderMarkdown(
       "Sorry, I could not reach the model server. Please try again."
     );
+    console.error(error);
   } finally {
     setLoadingState(false);
   }

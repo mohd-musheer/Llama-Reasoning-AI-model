@@ -1,0 +1,158 @@
+# reasoning-llama-ai
+
+reasoning-llama-ai is a reasoning-focused local LLM chat application powered by:
+
+- Quantized Llama 3
+- llama.cpp
+- FastAPI
+- Docker
+- Modern ChatGPT-style UI
+
+It runs fully locally using GGUF models and provides an interactive web-based AI chat experience with markdown and LaTeX rendering support.
+
+[docker image](https://hub.docker.com/r/mohdmusheer/reasoning-llama-ai)
+
+---
+
+# Features
+
+- Quantized GGUF Llama 3 inference
+- llama.cpp backend
+- FastAPI API server
+- Responsive modern UI
+- Markdown rendering
+- LaTeX math rendering
+- Dockerized deployment
+- CPU inference support
+- Streaming-ready architecture
+
+---
+
+# Tech Stack
+
+- Python 3.11
+- FastAPI
+- llama.cpp
+- Docker
+- JavaScript
+- HTML/CSS
+- Jinja2
+
+---
+
+# Project Structure
+
+```text
+reasoning-llama-ai/
+│
+├── app/
+│   ├── api.py
+│   ├── static/
+│   └── templates/
+│
+├── model/
+│   └── llama3-q4_k_m.gguf
+│
+├── Dockerfile
+├── start.sh
+├── requirements.txt
+└── README.md
+```
+
+---
+
+# Run Locally
+
+## Clone repository
+
+```bash
+git clone https://github.com/mohd-musheer/Llama-Reasoning-AI-model.git
+
+cd Llama-Reasoning-AI-model
+```
+
+---
+
+## Build Docker image
+
+```bash
+
+docker pull mohdmusheer/reasoning-llama-ai:latest
+
+docker build -t reasoning-llama-ai .
+```
+
+---
+
+## Run container
+
+```bash
+docker run -p 8000:8000 reasoning-llama-ai
+```
+
+---
+
+# Open App
+
+```text
+http://localhost:8000
+```
+
+---
+
+# API Endpoint
+
+## POST /generate
+
+### Request
+
+```json
+{
+  "prompt": "Explain machine learning simply."
+}
+```
+
+### Response
+
+```json
+{
+  "input": "Explain machine learning simply.",
+  "response": "Machine learning is..."
+}
+```
+
+---
+
+# Model
+
+This project uses:
+
+- Quantized GGUF Llama 3 model
+- llama.cpp inference backend
+
+---
+
+# Notes
+
+- Optimized for CPU inference
+- Works on low-memory systems
+- Designed for local deployment
+- Streaming support can be added later
+
+---
+
+# Future Improvements
+
+- Real-time token streaming
+- Conversation memory
+- RAG support
+- Multi-model support
+- GPU acceleration
+- Authentication
+- Chat history persistence
+
+---
+
+# License
+
+MIT License

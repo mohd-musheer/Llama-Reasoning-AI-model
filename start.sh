@@ -1,15 +1,27 @@
 #!/bin/bash
 
-# Start llama-server in background
+set -e
+
+echo "Starting llama.cpp server..."
 
 ./llama.cpp/build/bin/llama-server \
--m ./model/llama3-q4_k_m.gguf \
--c 1024 \
--ngl 0 &
+  -m ./model/llama3-q4_k_m.gguf \
+  -c 1024 \
+  --host 0.0.0.0 \
+  --port 8080 \
+  -ngl 0 > llama.log 2>&1 &
 
-# Wait a bit for server startup
-sleep 5
+echo "Waiting for model to fully load..."
 
-# Start FastAPI
+until curl -s http://127.0.0.1:8080/v1/models | grep -q "data"; do
+    echo "Model still loading into memory..."
+    sleep 5
+done
 
-uvicorn app.api:app --host 0.0.0.0 --port 8000
+echo "Model loaded successfully!"
+
+echo "Starting FastAPI..."
+
+exec uvicorn app.api:app \
+    --host 0.0.0.0 \
+    --port 8000

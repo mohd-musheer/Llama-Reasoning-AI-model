@@ -7,14 +7,14 @@
   --panel-strong: #151d2c;
   --text: #edf1ff;
   --muted: #9aa7bb;
-  --accent: #6a5cff;
+  --accent: #2bd9a0;
   --accent-strong: #2b7bff;
-  --accent-bright: #49d0ff;
+  --accent-bright: #6ef6c8;
   --border: rgba(148, 163, 184, 0.22);
   --shadow: rgba(2, 6, 23, 0.6);
-  --user-gradient: linear-gradient(135deg, #6a5cff 0%, #3f7bff 55%, #49d0ff 100%);
+  --user-gradient: linear-gradient(135deg, #2bd9a0 0%, #2b7bff 60%, #49d0ff 100%);
   --ai-gradient: linear-gradient(160deg, #141c2a 0%, #0f1522 100%);
-  --focus: rgba(106, 92, 255, 0.45);
+  --focus: rgba(43, 217, 160, 0.45);
 }
 
 * {
@@ -50,8 +50,8 @@ body::before {
 }
 
 body::after {
-  background: radial-gradient(380px 260px at 82% 8%, rgba(73, 140, 255, 0.2), transparent 60%),
-    radial-gradient(320px 240px at 10% 78%, rgba(110, 92, 255, 0.18), transparent 55%);
+  background: radial-gradient(380px 260px at 82% 8%, rgba(73, 180, 255, 0.18), transparent 60%),
+    radial-gradient(320px 240px at 10% 78%, rgba(43, 217, 160, 0.18), transparent 55%);
   mix-blend-mode: screen;
   opacity: 0.8;
 }
