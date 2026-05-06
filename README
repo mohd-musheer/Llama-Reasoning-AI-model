@@ -1,46 +1,41 @@
-# reasoning-llama-ai
+# 🧠 Reasoning Llama AI
 
-reasoning-llama-ai is a reasoning-focused local LLM chat application powered by:
+A reasoning-focused local LLM chat application powered by Quantized Llama 3, llama.cpp, FastAPI, and Docker.
 
-- Quantized Llama 3
-- llama.cpp
-- FastAPI
-- Docker
-- Modern ChatGPT-style UI
-
-It runs fully locally using GGUF models and provides an interactive web-based AI chat experience with markdown and LaTeX rendering support.
-
-[docker image](https://hub.docker.com/r/mohdmusheer/reasoning-llama-ai)
+It runs fully locally using GGUF models and provides a modern ChatGPT-style interface with markdown and LaTeX rendering support.
 
 ---
 
-# Features
+## 🚀 Demo Features
 
-- Quantized GGUF Llama 3 inference
-- llama.cpp backend
-- FastAPI API server
-- Responsive modern UI
-- Markdown rendering
-- LaTeX math rendering
-- Dockerized deployment
-- CPU inference support
-- Streaming-ready architecture
-
----
-
-# Tech Stack
-
-- Python 3.11
-- FastAPI
-- llama.cpp
-- Docker
-- JavaScript
-- HTML/CSS
-- Jinja2
+- ⚡ Quantized GGUF Llama 3 inference
+- 🧠 Reasoning-focused prompting
+- 🦙 llama.cpp backend
+- ⚙️ FastAPI API server
+- 🎨 Modern responsive UI
+- ✍️ Markdown rendering
+- ➗ LaTeX math rendering
+- 🐳 Dockerized deployment
+- 💻 CPU inference support
+- 🔄 Streaming-ready architecture
 
 ---
 
-# Project Structure
+## 🛠️ Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| Python 3.11 | Backend |
+| FastAPI | API framework |
+| llama.cpp | Local LLM inference |
+| Docker | Containerization |
+| JavaScript | Frontend |
+| HTML/CSS | UI |
+| Jinja2 | Templates |
+
+---
+
+# 📂 Project Structure
 
 ```text
 reasoning-llama-ai/
@@ -61,9 +56,31 @@ reasoning-llama-ai/
 
 ---
 
-# Run Locally
+# 🐳 Docker Hub
 
-## Clone repository
+Docker Image:
+
+```text
+mohdmusheer/reasoning-llama-ai
+```
+
+Docker Hub Link:
+
+```text
+https://hub.docker.com/r/mohdmusheer/reasoning-llama-ai
+```
+
+Pull image directly:
+
+```bash
+docker pull mohdmusheer/reasoning-llama-ai:latest
+```
+
+---
+
+# ⚙️ Run Locally
+
+## 1️⃣ Clone Repository
 
 ```bash
 git clone https://github.com/mohd-musheer/Llama-Reasoning-AI-model.git
@@ -73,18 +90,15 @@ cd Llama-Reasoning-AI-model
 
 ---
 
-## Build Docker image
+## 2️⃣ Build Docker Image
 
 ```bash
-
-docker pull mohdmusheer/reasoning-llama-ai:latest
-
 docker build -t reasoning-llama-ai .
 ```
 
 ---
 
-## Run container
+## 3️⃣ Run Container
 
 ```bash
 docker run -p 8000:8000 reasoning-llama-ai
@@ -92,7 +106,7 @@ docker run -p 8000:8000 reasoning-llama-ai
 
 ---
 
-# Open App
+# 🌐 Open Application
 
 ```text
 http://localhost:8000
@@ -100,9 +114,9 @@ http://localhost:8000
 
 ---
 
-# API Endpoint
+# 📡 API Endpoint
 
-## POST /generate
+## POST `/generate`
 
 ### Request
 
@@ -123,7 +137,7 @@ http://localhost:8000
 
 ---
 
-# Model
+# 🧠 Model
 
 This project uses:
 
@@ -132,27 +146,28 @@ This project uses:
 
 ---
 
-# Notes
+# 📌 Notes
 
 - Optimized for CPU inference
 - Works on low-memory systems
-- Designed for local deployment
+- Fully local deployment
+- Docker-ready architecture
 - Streaming support can be added later
 
 ---
 
-# Future Improvements
+# 🔮 Future Improvements
 
 - Real-time token streaming
 - Conversation memory
-- RAG support
+- RAG integration
 - Multi-model support
 - GPU acceleration
 - Authentication
-- Chat history persistence
+- Persistent chat history
 
 ---
 
-# License
+# 📜 License
 
 MIT License
